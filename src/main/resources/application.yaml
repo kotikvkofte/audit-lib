@@ -1,3 +1,18 @@
 spring:
   application:
     name: audit-lib
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      properties:
+        enable.idempotence: true
+
+audit:
+  kafka:
+    topic: audit-log
+  logging:
+    enabled: true
+    modes:
+      - CONSOLE
+      - FILE
+      - KAFKA
