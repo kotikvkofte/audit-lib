@@ -1,6 +1,5 @@
 package org.ex9.auditlib.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.log4j.Log4j2;
 import org.ex9.auditlib.annotation.AuditLog;
@@ -8,14 +7,12 @@ import org.ex9.auditlib.aspect.AuditLogAspect;
 import org.ex9.auditlib.filter.HttpLoggingFilter;
 import org.ex9.auditlib.property.AuditLogProperties;
 import org.ex9.auditlib.property.AuditKafkaProperties;
-import org.ex9.auditlib.service.KafkaPublishService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.core.KafkaTemplate;
 
 /**
  * Автоконфигурация стартера.
@@ -45,26 +42,13 @@ public class AuditLogAutoConfiguration {
     }
 
     /**
-     * Создаёт бин сервиса для отправки сообщений в Kafka.
-     *
-     * @param kafkaTemplate шаблон Kafka для отправки сообщений
-     * @param props настройки Kafka из {@link AuditKafkaProperties}
-     * @return экземпляр {@link KafkaPublishService}
-     */
-    @Bean
-    public KafkaPublishService kafkaPublishService(KafkaTemplate<String, String> kafkaTemplate, AuditKafkaProperties props) {
-        return new KafkaPublishService(kafkaTemplate, props, new ObjectMapper());
-    }
-
-    /**
      * Создаёт бин фильтра для логирования HTTP-запросов.
      *
-     * @param kafkaPublishService сервис для отправки логов в Kafka
      * @return экземпляр {@link HttpLoggingFilter}
      */
     @Bean
-    public HttpLoggingFilter httpLoggingFilter(KafkaPublishService kafkaPublishService) {
-        return new HttpLoggingFilter(kafkaPublishService);
+    public HttpLoggingFilter httpLoggingFilter() {
+        return new HttpLoggingFilter();
     }
 
     /**

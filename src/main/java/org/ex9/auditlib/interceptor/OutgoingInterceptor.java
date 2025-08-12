@@ -3,7 +3,6 @@ package org.ex9.auditlib.interceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.ex9.auditlib.dto.HttpLogDto;
-import org.ex9.auditlib.service.KafkaPublishService;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -23,8 +22,6 @@ import java.time.LocalDateTime;
 @Log4j2
 @Component
 public class OutgoingInterceptor implements ClientHttpRequestInterceptor {
-
-    private final KafkaPublishService kafkaPublishService;
 
     /**
      * Перехватывает исходящий HTTP-запрос и логирует его параметры.
@@ -54,8 +51,7 @@ public class OutgoingInterceptor implements ClientHttpRequestInterceptor {
                 .requestBody(requestBody)
                 .build();
 
-        log.debug(dto);
-        kafkaPublishService.send(dto);
+        log.info(dto);
 
         return response;
     }

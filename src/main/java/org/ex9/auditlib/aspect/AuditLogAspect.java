@@ -8,12 +8,8 @@ import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.ex9.auditlib.annotation.AuditLog;
-import org.ex9.auditlib.property.AuditLogProperties;
 import org.ex9.auditlib.dto.AuditDto;
-import org.ex9.auditlib.service.KafkaPublishService;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -28,12 +24,6 @@ import java.util.UUID;
 @Aspect
 @Log4j2
 public class AuditLogAspect {
-
-    @Autowired
-    private AuditLogProperties auditLogProperties;
-
-    @Autowired
-    private KafkaPublishService kafkaPublishService;
 
     private static UUID ID;
 
@@ -54,26 +44,17 @@ public class AuditLogAspect {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
 
-        String args = Arrays.toString(joinPoint.getArgs());
         Level logLevel = Level.toLevel(auditLog.logLevel().toString());
 
-        String message = String.format("START %s %s.%s \n args = %s", ID, className, methodName, args);
+        var dto = AuditDto.builder()
+                .type("START")
+                .id(ID.toString())
+                .args(joinPoint.getArgs())
+                .logLevel(logLevel.toString())
+                .methodName(String.format("%s.%s", className, methodName))
+                .build();
 
-        log.log(logLevel, message);
-
-        if (auditLogProperties.isKafkaIncluded()) {
-
-            var dto = AuditDto.builder()
-                    .type("START")
-                    .id(ID.toString())
-                    .args(joinPoint.getArgs())
-                    .logLevel(logLevel.toString())
-                    .methodName(String.format("%s.%s", className, methodName))
-                    .build();
-
-            kafkaPublishService.send(dto);
-        }
-
+        log.info(dto);
     }
 
     /**
@@ -95,21 +76,15 @@ public class AuditLogAspect {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
 
-        String message = String.format("END %s %s.%s result = %s", ID, className, methodName, result);
+        var dto = AuditDto.builder()
+                .type("END")
+                .id(ID.toString())
+                .result(result)
+                .logLevel(logLevel.toString())
+                .methodName(String.format("%s.%s", className, methodName))
+                .build();
 
-        log.log(logLevel, message);
-        if (auditLogProperties.isKafkaIncluded()) {
-
-            var dto = AuditDto.builder()
-                    .type("END")
-                    .id(ID.toString())
-                    .result(result)
-                    .logLevel(logLevel.toString())
-                    .methodName(String.format("%s.%s", className, methodName))
-                    .build();
-
-            kafkaPublishService.send(dto);
-        }
+        log.info(dto);
     }
 
     /**
@@ -132,22 +107,15 @@ public class AuditLogAspect {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
 
-        String message = String.format("ERROR %s %s.%s error = %s", ID, className, methodName, ex);
+        var dto = AuditDto.builder()
+                .type("ERROR")
+                .id(ID.toString())
+                .error(ex.getMessage())
+                .logLevel(logLevel.toString())
+                .methodName(String.format("%s.%s", className, methodName))
+                .build();
 
-        log.log(logLevel, message);
-
-        if (auditLogProperties.isKafkaIncluded()) {
-
-            var dto = AuditDto.builder()
-                    .type("ERROR")
-                    .id(ID.toString())
-                    .error(ex.getMessage())
-                    .logLevel(logLevel.toString())
-                    .methodName(String.format("%s.%s", className, methodName))
-                    .build();
-
-            kafkaPublishService.send(dto);
-        }
+        log.info(dto);
     }
 
 }

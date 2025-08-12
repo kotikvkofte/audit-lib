@@ -17,7 +17,7 @@ import java.util.StringJoiner;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class HttpLogDto {
+public class HttpLogDto implements LogDto {
 
     /** Время запроса. */
     @Builder.Default

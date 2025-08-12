@@ -1,8 +1,12 @@
 package org.ex9.auditlib.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.ex9.auditlib.property.AuditKafkaProperties;
+import org.ex9.auditlib.property.AuditLogProperties;
+import org.ex9.auditlib.service.KafkaPublishService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,13 +26,16 @@ import java.util.Map;
  * @author Краковецв Артём
  */
 @Configuration
+@RequiredArgsConstructor
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${spring.kafka.bootstrap-servers:}")
     private String bootstrapServer;
 
     @Value("${audit.kafka.transactional-id-prefix:audit-lib-tx-}")
     private String transactionalIdPrefix;
+
+    private final AuditLogProperties auditLogProperties;
 
     /**
      * Создаёт фабрику продюсера с настройками для семантики exactly-once.
@@ -60,6 +67,18 @@ public class KafkaConfig {
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+
+    /**
+     * Создаёт бин сервиса для отправки сообщений в Kafka.
+     *
+     * @param kafkaTemplate шаблон Kafka для отправки сообщений
+     * @param props настройки Kafka из {@link AuditKafkaProperties}
+     * @return экземпляр {@link KafkaPublishService}
+     */
+    @Bean
+    public KafkaPublishService kafkaPublishService(KafkaTemplate<String, String> kafkaTemplate, AuditKafkaProperties props) {
+        return new KafkaPublishService(kafkaTemplate, props, new ObjectMapper());
     }
 
 }

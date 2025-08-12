@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.ex9.auditlib.util.LogMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
@@ -28,6 +29,7 @@ import java.util.List;
  * @author Краковцев Артём
  */
 @ConfigurationProperties(prefix = "audit.logging")
+@Component
 @Log4j2
 @Data
 public class AuditLogProperties {

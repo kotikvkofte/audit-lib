@@ -5,10 +5,11 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.LogManager;
+import org.ex9.auditlib.appender.AppenderFabric;
 import org.ex9.auditlib.property.AuditLogProperties;
 import org.ex9.auditlib.service.KafkaPublishService;
-import org.ex9.auditlib.util.LogMode;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,25 +27,25 @@ public class LogConfiguration implements InitializingBean {
 
     private final AuditLogProperties auditLogProperties;
 
+    @Autowired(required = false)
+    private final KafkaPublishService kafkaPublishService;
+
     /**
      * Инициализирует и добавляет аппендеры на основе настроек {@link AuditLogProperties}
-     * для режимов логирования (консоль, файл).
+     * для режимов логирования (консоль, файл, кафка).
      * @throws Exception ошибка при конфигурации логгеров
      */
     @Override
-    public void afterPropertiesSet() throws Exception {
-
+    public void afterPropertiesSet() {
         LoggerContext context = (LoggerContext) LogManager.getContext(false);
         Configuration config = context.getConfiguration();
 
         auditLogProperties.getModes().forEach(mode -> {
-            if (mode != LogMode.KAFKA) {
-                Appender appender = config.getAppender(mode.toString());
-                config.getRootLogger().addAppender(appender, null, null);
-            }
+            Appender appender = AppenderFabric.getAppender(mode, config, kafkaPublishService);
+            config.getRootLogger().addAppender(appender, null, null);
         });
 
         context.updateLoggers();
-
     }
+
 }

@@ -4,10 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.ex9.auditlib.dto.HttpLogDto;
-import org.ex9.auditlib.service.KafkaPublishService;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -21,10 +19,7 @@ import java.time.LocalDateTime;
  * @author Краковев Артём
  */
 @Log4j2
-@RequiredArgsConstructor
 public class HttpLoggingFilter extends OncePerRequestFilter {
-
-    private final KafkaPublishService kafkaPublishService;
 
     /**
      * Обрабатывает входящий HTTP-запрос и вызывает
@@ -73,9 +68,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter {
                 .responseBody(responseBody)
                 .build();
 
-        log.info(dto.getLog());
-
-        kafkaPublishService.send(dto);
+        log.info(dto);
     }
 
 }
