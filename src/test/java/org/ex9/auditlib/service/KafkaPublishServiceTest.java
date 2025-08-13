@@ -17,11 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.apache.logging.log4j.Logger;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,33 +67,19 @@ class KafkaPublishServiceTest {
         appender.stop();
     }
 
-    private static class ArgsObj {
-        private String name;
-        private int value;
-
-        public ArgsObj(String name, int value) {
-            this.name = name;
-            this.value = value;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public int getValue() {
-            return value;
-        }
-    }
-
     @Test
     void sendAuditDto_shouldSendToKafka() throws JsonProcessingException {
+        String testId = UUID.randomUUID().toString();
         AuditDto auditDto = AuditDto.builder()
-                .id("test-id")
+                .messageId(UUID.randomUUID().toString())
+                .id(testId)
                 .type("START")
                 .logLevel("INFO")
                 .args(new Object[]{"test"})
                 .methodName("TestClass.testMethod")
+                .timestamp(LocalDateTime.now().toString())
                 .build();
+
         when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
         when(objectMapper.writeValueAsString(auditDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
@@ -101,16 +88,22 @@ class KafkaPublishServiceTest {
 
         verify(objectMapper).writeValueAsString(auditDto);
         verify(kafkaTemplate).executeInTransaction(any());
+        verify(auditKafkaProperties).getTopic();
     }
 
     @Test
     void sendHttpLogDto_shouldSendToKafka() throws JsonProcessingException {
         HttpLogDto httpLogDto = HttpLogDto.builder()
+                .messageId(UUID.randomUUID().toString())
                 .direction("Incoming")
                 .method("GET")
                 .url("/test")
                 .statusCode(200)
+                .requestBody("{}")
+                .responseBody("{\"success\":true}")
+                .timestamp(LocalDateTime.now().toString())
                 .build();
+
         when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
         when(objectMapper.writeValueAsString(httpLogDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
@@ -119,11 +112,13 @@ class KafkaPublishServiceTest {
 
         verify(objectMapper).writeValueAsString(httpLogDto);
         verify(kafkaTemplate).executeInTransaction(any());
+        verify(auditKafkaProperties).getTopic();
     }
 
     @Test
     void sendAuditDto_withJsonProcessingException_shouldLogError() throws JsonProcessingException {
         AuditDto auditDto = AuditDto.builder()
+                .messageId(UUID.randomUUID().toString())
                 .id("test-id")
                 .type("START")
                 .methodName("TestClass.testMethod")
@@ -131,34 +126,108 @@ class KafkaPublishServiceTest {
                 .args(null)
                 .timestamp("2025-08-11T16:10:38.915613700")
                 .build();
+
         when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
-        doThrow(new JsonProcessingException("Serialization error") {}).when(objectMapper).writeValueAsString(auditDto);
+        doThrow(new JsonProcessingException("Serialization error") {})
+                .when(objectMapper).writeValueAsString(auditDto);
 
         kafkaPublishService.send(auditDto);
 
         verify(objectMapper).writeValueAsString(auditDto);
         String logOutput = logCapture.toString();
-        assertTrue(logOutput.contains("Serialize auditDto error"));
+        assertTrue(logOutput.contains("Serialize auditDto error"),
+                "Log should contain error message. Actual log: " + logOutput);
         verifyNoInteractions(kafkaTemplate);
     }
 
     @Test
     void sendHttpLogDto_withJsonProcessingException_shouldLogError() throws JsonProcessingException {
         HttpLogDto httpLogDto = HttpLogDto.builder()
+                .messageId(UUID.randomUUID().toString())
                 .direction("Incoming")
                 .method("GET")
                 .url("/test")
                 .statusCode(200)
+                .requestBody("{}")
+                .responseBody("{}")
+                .timestamp(LocalDateTime.now().toString())
                 .build();
+
         when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
-        doThrow(new JsonProcessingException("Serialization error") {}).when(objectMapper).writeValueAsString(httpLogDto);
+        doThrow(new JsonProcessingException("Serialization error") {})
+                .when(objectMapper).writeValueAsString(httpLogDto);
 
         kafkaPublishService.send(httpLogDto);
 
         verify(objectMapper).writeValueAsString(httpLogDto);
         String logOutput = logCapture.toString();
-        assertTrue(logOutput.contains("Serialize httpLogDto error"));
+        assertTrue(logOutput.contains("Serialize httpLogDto error"),
+                "Log should contain error message. Actual log: " + logOutput);
         verifyNoInteractions(kafkaTemplate);
+    }
+
+    @Test
+    void sendAuditDto_withNullValues_shouldHandleGracefully() throws JsonProcessingException {
+        AuditDto auditDto = AuditDto.builder()
+                .messageId(UUID.randomUUID().toString())
+                .id(null)
+                .type(null)
+                .methodName(null)
+                .logLevel(null)
+                .args(null)
+                .result(null)
+                .error(null)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+
+        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(objectMapper.writeValueAsString(auditDto)).thenReturn("serialized-dto");
+        when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
+
+        assertDoesNotThrow(() -> kafkaPublishService.send(auditDto));
+        verify(objectMapper).writeValueAsString(auditDto);
+        verify(kafkaTemplate).executeInTransaction(any());
+    }
+
+    @Test
+    void sendHttpLogDto_withNullValues_shouldHandleGracefully() throws JsonProcessingException {
+        // Arrange
+        HttpLogDto httpLogDto = HttpLogDto.builder()
+                .messageId(UUID.randomUUID().toString())
+                .direction(null)
+                .method(null)
+                .url(null)
+                .statusCode(0)
+                .requestBody(null)
+                .responseBody(null)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+
+        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(objectMapper.writeValueAsString(httpLogDto)).thenReturn("serialized-dto");
+        when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
+
+        assertDoesNotThrow(() -> kafkaPublishService.send(httpLogDto));
+        verify(objectMapper).writeValueAsString(httpLogDto);
+        verify(kafkaTemplate).executeInTransaction(any());
+    }
+
+    @Test
+    void sendAuditDto_withTransactionFailure_shouldThrowException() throws JsonProcessingException {
+        AuditDto auditDto = AuditDto.builder()
+                .messageId(UUID.randomUUID().toString())
+                .id("test-id")
+                .type("START")
+                .methodName("TestClass.testMethod")
+                .build();
+
+        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(objectMapper.writeValueAsString(auditDto)).thenReturn("serialized-dto");
+        when(kafkaTemplate.executeInTransaction(any())).thenThrow(new RuntimeException("Transaction failed"));
+
+        assertThrows(RuntimeException.class,() -> kafkaPublishService.send(auditDto));
+        verify(objectMapper).writeValueAsString(auditDto);
+        verify(kafkaTemplate).executeInTransaction(any());
     }
 
 }
