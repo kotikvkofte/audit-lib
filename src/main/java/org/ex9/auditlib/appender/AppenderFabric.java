@@ -24,19 +24,19 @@ public class AppenderFabric {
         return switch (logMode) {
             case CONSOLE -> createConsoleAppender(config);
             case FILE -> createFileAppender(config);
-            case KAFKA -> createKafkaAppender(config, kafkaPublishService);
+            case KAFKA -> createKafkaAppender(kafkaPublishService);
         };
     }
 
     private static Appender createFileAppender(Configuration config) {
         AuditStringLayout layout = AuditStringLayout.createLayout();
 
-        String logFilePath = "logs/audit.log"; // можно взять из application.yml
+        String logFilePath = "logs/audit.log";
         SizeBasedTriggeringPolicy policy = SizeBasedTriggeringPolicy.createPolicy("1MB");
 
         RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
                 .withFileName(logFilePath)
-                .withFilePattern("logs/audit-%d{yyyy-MM-dd-HH-mm}-%i.log.gz")
+                .withFilePattern("logs/audit-%d{yyyy-MM-dd-HH-mm}-%i.log")
                 .setName("File")
                 .setLayout(layout)
                 .withPolicy(policy)
@@ -61,7 +61,7 @@ public class AppenderFabric {
         return consoleAppender;
     }
 
-    private static Appender createKafkaAppender(Configuration config, KafkaPublishService kafkaPublishService) {
+    private static Appender createKafkaAppender(KafkaPublishService kafkaPublishService) {
         if (kafkaPublishService == null) {
             log.error("KafkaPublishService is not available.");
             return null;
