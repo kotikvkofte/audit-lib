@@ -19,6 +19,9 @@ import java.util.StringJoiner;
 @AllArgsConstructor
 public class HttpLogDto implements LogDto {
 
+    /** Уникальный идентификатор сообщения. */
+    private String messageId;
+
     /** Время запроса. */
     @Builder.Default
     private String timestamp = LocalDateTime.now().toString();

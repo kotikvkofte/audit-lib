@@ -19,6 +19,9 @@ import java.util.StringJoiner;
 @Builder
 public class AuditDto implements LogDto {
 
+    /** Уникальный идентификатор сообщения. */
+    private String messageId;
+
     /** Уникальный идентификатор события. */
     private String id;
 
