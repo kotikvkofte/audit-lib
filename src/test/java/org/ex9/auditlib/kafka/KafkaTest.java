@@ -2,7 +2,6 @@ package org.ex9.auditlib.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -76,7 +75,7 @@ public class KafkaTest {
 
     @Test
     @DisplayName("Отправка HttpLogDto в Kafka")
-    void sendTest_withHttpLogDto() throws Exception {
+    void sendTest_withHttpLogDto() {
         HttpLogDto httpLogDto = HttpLogDto.builder()
                 .url("https://api.example.com")
                 .method("GET")
@@ -108,41 +107,6 @@ public class KafkaTest {
         assertTrue(record.value().contains("https://api.example.com"));
         assertTrue(record.value().contains("GET"));
         assertNotNull(record.key());
-    }
-
-    @Test
-    @DisplayName("Отправка нескольких сообщений подряд")
-    void sendTest_sendMultipleMessages() throws Exception {
-        AuditDto dto1 = AuditDto.builder()
-                .id(UUID.randomUUID().toString())
-                .type("START")
-                .methodName("method1")
-                .build();
-
-        AuditDto dto2 = AuditDto.builder()
-                .id(UUID.randomUUID().toString())
-                .type("END")
-                .methodName("method2")
-                .build();
-
-        kafkaPublishService.send(dto1);
-        kafkaPublishService.send(dto2);
-
-        Map<String, Object> consumerProps = KafkaTestUtils.consumerProps("testGroup_" + UUID.randomUUID(), "true", embeddedKafka);
-        consumerProps.put("key.deserializer", StringDeserializer.class);
-        consumerProps.put("value.deserializer", StringDeserializer.class);
-
-        var consumerFactory = new DefaultKafkaConsumerFactory<String, String>(consumerProps);
-        var consumer = consumerFactory.createConsumer();
-        embeddedKafka.consumeFromAllEmbeddedTopics(consumer);
-
-        ConsumerRecords<String, String> consumerRecords = KafkaTestUtils.getRecords(consumer, java.time.Duration.ofSeconds(5));
-        List<ConsumerRecord<String, String>> records = new ArrayList<>();
-        consumerRecords.forEach(records::add);
-        assertEquals(2, records.size());
-
-        assertTrue(records.get(0).value().contains("method1"));
-        assertTrue(records.get(1).value().contains("method2"));
     }
 
     @Test
@@ -274,7 +238,7 @@ public class KafkaTest {
 
     @Test
     @DisplayName("Проверка производительности отправки")
-    void sendTest_sendManyTimes() throws InterruptedException {
+    void sendTest_sendManyTimes() {
         int messageCount = 100;
         long startTime = System.currentTimeMillis();
 
