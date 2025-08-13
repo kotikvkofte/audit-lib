@@ -47,6 +47,7 @@ public class AuditLogAspect {
         Level logLevel = Level.toLevel(auditLog.logLevel().toString());
 
         var dto = AuditDto.builder()
+                .messageId(UUID.randomUUID().toString())
                 .type("START")
                 .id(ID.toString())
                 .args(joinPoint.getArgs())
@@ -77,6 +78,7 @@ public class AuditLogAspect {
         String methodName = joinPoint.getSignature().getName();
 
         var dto = AuditDto.builder()
+                .messageId(UUID.randomUUID().toString())
                 .type("END")
                 .id(ID.toString())
                 .result(result)
@@ -108,6 +110,7 @@ public class AuditLogAspect {
         String methodName = joinPoint.getSignature().getName();
 
         var dto = AuditDto.builder()
+                .messageId(UUID.randomUUID().toString())
                 .type("ERROR")
                 .id(ID.toString())
                 .error(ex.getMessage())

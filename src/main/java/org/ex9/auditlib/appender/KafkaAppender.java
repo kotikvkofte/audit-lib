@@ -1,6 +1,5 @@
 package org.ex9.auditlib.appender;
 
-import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.*;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.appender.AppenderLoggingException;
@@ -91,7 +90,6 @@ public class KafkaAppender extends AbstractAppender {
     @Override
     public void append(LogEvent event) {
         try {
-            ThreadContext.put(KAFKA_LOGGING_KEY, KAFKA_LOGGING_VALUE);
             Object[] params = event.getMessage().getParameters();
             if (params != null && params.length > 0) {
                 Object obj = params[0];
