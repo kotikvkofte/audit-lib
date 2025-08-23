@@ -6,11 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.ex9.auditlib.dto.AuditDto;
 import org.ex9.auditlib.dto.HttpLogDto;
+import org.ex9.auditlib.dto.LogDto;
 import org.ex9.auditlib.property.AuditKafkaProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Сервис для отправки логов в Kafka.
@@ -30,39 +29,38 @@ public class KafkaPublishService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Отправляет данные в Kafka.
+     * Отправляет данные в kafka в соответствующий топик.
      *
-     * @param auditDto данные
+     * @param logDto данные
      */
-    public void send(AuditDto auditDto) {
+    public void send(LogDto logDto) {
         try {
-            String topic = auditKafkaProperties.getTopic();
-            String message = objectMapper.writeValueAsString(auditDto);
+            String message = objectMapper.writeValueAsString(logDto);
+            String topic = getTopicByDtoType(logDto);
             kafkaTemplate.executeInTransaction(ops -> {
-                ops.send(topic, auditDto.getId(), message);
+                ops.send(topic, logDto.getMessageId(), message);
                 return true;
             });
         } catch (JsonProcessingException e) {
-            log.error("Serialize auditDto error", e);
+            log.error("Serialize logDto error", e);
+        } catch (IllegalStateException e) {
+            log.error("Error searching for topic ", e);
         }
     }
 
     /**
-     * Отправляет данные HTTP-запроса в Kafka.
-     *
-     * @param httpLogDto данные HTTP-запроса
+     * Определяет топик по входным данным.
+     * @param logDto входные данные
+     * @return имя топика, соответствующего данным
      */
-    public void send(HttpLogDto httpLogDto) {
-        try {
-            String topic = auditKafkaProperties.getTopic();
-            String message = objectMapper.writeValueAsString(httpLogDto);
-            kafkaTemplate.executeInTransaction(ops -> {
-                ops.send(topic, UUID.randomUUID().toString(), message);
-                return true;
-            });
-        } catch (JsonProcessingException e) {
-            log.error("Serialize httpLogDto error", e);
+    private String getTopicByDtoType(LogDto logDto) {
+        String topic = null;
+        switch (logDto) {
+            case HttpLogDto httpLogDto -> topic = auditKafkaProperties.getRequestsTopic();
+            case AuditDto auditDto -> topic = auditKafkaProperties.getMethodsTopic();
+            default -> throw new IllegalStateException("Unexpected value: " + logDto);
         }
+        return topic;
     }
 
 }

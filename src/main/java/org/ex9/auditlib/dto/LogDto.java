@@ -9,5 +9,5 @@ package org.ex9.auditlib.dto;
 public interface LogDto {
 
     String getLog();
-
+    String getMessageId();
 }
