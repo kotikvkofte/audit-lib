@@ -1,5 +1,6 @@
 package org.ex9.auditlib.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -47,6 +48,7 @@ public class AuditDto implements LogDto {
     @Builder.Default
     private String timestamp = LocalDateTime.now().toString();
 
+    @JsonIgnore
     @Override
     public String getLog() {
         StringJoiner log = new StringJoiner(" ");

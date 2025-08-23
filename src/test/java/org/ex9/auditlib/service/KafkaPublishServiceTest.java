@@ -80,7 +80,7 @@ class KafkaPublishServiceTest {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(auditKafkaProperties.getMethodsTopic()).thenReturn("audit.methods");
         when(objectMapper.writeValueAsString(auditDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
 
@@ -88,7 +88,7 @@ class KafkaPublishServiceTest {
 
         verify(objectMapper).writeValueAsString(auditDto);
         verify(kafkaTemplate).executeInTransaction(any());
-        verify(auditKafkaProperties).getTopic();
+        verify(auditKafkaProperties).getMethodsTopic();
     }
 
     @Test
@@ -104,7 +104,7 @@ class KafkaPublishServiceTest {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(auditKafkaProperties.getRequestsTopic()).thenReturn("audit.requests");
         when(objectMapper.writeValueAsString(httpLogDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
 
@@ -112,7 +112,7 @@ class KafkaPublishServiceTest {
 
         verify(objectMapper).writeValueAsString(httpLogDto);
         verify(kafkaTemplate).executeInTransaction(any());
-        verify(auditKafkaProperties).getTopic();
+        verify(auditKafkaProperties).getRequestsTopic();
     }
 
     @Test
@@ -127,7 +127,6 @@ class KafkaPublishServiceTest {
                 .timestamp("2025-08-11T16:10:38.915613700")
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
         doThrow(new JsonProcessingException("Serialization error") {})
                 .when(objectMapper).writeValueAsString(auditDto);
 
@@ -135,7 +134,7 @@ class KafkaPublishServiceTest {
 
         verify(objectMapper).writeValueAsString(auditDto);
         String logOutput = logCapture.toString();
-        assertTrue(logOutput.contains("Serialize auditDto error"),
+        assertTrue(logOutput.contains("Serialize logDto error"),
                 "Log should contain error message. Actual log: " + logOutput);
         verifyNoInteractions(kafkaTemplate);
     }
@@ -153,7 +152,6 @@ class KafkaPublishServiceTest {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
         doThrow(new JsonProcessingException("Serialization error") {})
                 .when(objectMapper).writeValueAsString(httpLogDto);
 
@@ -161,7 +159,7 @@ class KafkaPublishServiceTest {
 
         verify(objectMapper).writeValueAsString(httpLogDto);
         String logOutput = logCapture.toString();
-        assertTrue(logOutput.contains("Serialize httpLogDto error"),
+        assertTrue(logOutput.contains("Serialize logDto error"),
                 "Log should contain error message. Actual log: " + logOutput);
         verifyNoInteractions(kafkaTemplate);
     }
@@ -180,7 +178,7 @@ class KafkaPublishServiceTest {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(auditKafkaProperties.getMethodsTopic()).thenReturn("audit.methods");
         when(objectMapper.writeValueAsString(auditDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
 
@@ -191,7 +189,6 @@ class KafkaPublishServiceTest {
 
     @Test
     void sendHttpLogDto_withNullValues_shouldHandleGracefully() throws JsonProcessingException {
-        // Arrange
         HttpLogDto httpLogDto = HttpLogDto.builder()
                 .messageId(UUID.randomUUID().toString())
                 .direction(null)
@@ -203,7 +200,7 @@ class KafkaPublishServiceTest {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(auditKafkaProperties.getRequestsTopic()).thenReturn("audit.requests");
         when(objectMapper.writeValueAsString(httpLogDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenReturn(true);
 
@@ -221,7 +218,7 @@ class KafkaPublishServiceTest {
                 .methodName("TestClass.testMethod")
                 .build();
 
-        when(auditKafkaProperties.getTopic()).thenReturn("audit-topic");
+        when(auditKafkaProperties.getMethodsTopic()).thenReturn("audit.methods");
         when(objectMapper.writeValueAsString(auditDto)).thenReturn("serialized-dto");
         when(kafkaTemplate.executeInTransaction(any())).thenThrow(new RuntimeException("Transaction failed"));
 

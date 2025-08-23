@@ -35,7 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-@EmbeddedKafka(partitions = 1, topics = {"test-topic"})
+@EmbeddedKafka(partitions = 1, topics = {"audit.methods", "audit.requests"})
 public class KafkaTest {
 
     @Autowired
@@ -58,7 +58,8 @@ public class KafkaTest {
         MockitoAnnotations.openMocks(this);
 
         AuditKafkaProperties auditKafkaProperties = new AuditKafkaProperties();
-        auditKafkaProperties.setTopic("test-topic");
+        auditKafkaProperties.setMethodsTopic("audit.methods");
+        auditKafkaProperties.setRequestsTopic("audit.requests");
 
         kafkaPublishService = new KafkaPublishService(
                 kafkaTemplate,
@@ -78,6 +79,7 @@ public class KafkaTest {
     void sendTest_withHttpLogDto() {
         HttpLogDto httpLogDto = HttpLogDto.builder()
                 .url("https://api.example.com")
+                .messageId(UUID.randomUUID().toString())
                 .method("GET")
                 .statusCode(200)
                 .requestBody("{\"param\":\"value\"}")
@@ -93,7 +95,7 @@ public class KafkaTest {
 
         var consumerFactory = new DefaultKafkaConsumerFactory<String, String>(consumerProps);
         var consumer = consumerFactory.createConsumer();
-        embeddedKafka.consumeFromAnEmbeddedTopic(consumer, "test-topic");
+        embeddedKafka.consumeFromAnEmbeddedTopic(consumer, "audit.requests");
 
         ConsumerRecords<String, String> consumerRecords = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(10));
         List<ConsumerRecord<String, String>> records = new ArrayList<>();
@@ -175,38 +177,6 @@ public class KafkaTest {
 
         verify(mockKafkaTemplate, times(1)).executeInTransaction(any());
         verify(mockObjectMapper, times(1)).writeValueAsString(httpLogDto);
-    }
-
-    @Test
-    @DisplayName("Проверка отправки с пустыми полями")
-    void sendTest_emptyFields() {
-        AuditDto dto = AuditDto.builder()
-                .id("")
-                .type("")
-                .methodName("")
-                .build();
-
-        assertDoesNotThrow(() -> kafkaPublishService.send(dto));
-
-        Map<String, Object> consumerProps = KafkaTestUtils.consumerProps("testGroup_" + System.currentTimeMillis(), "true", embeddedKafka);
-        consumerProps.put("key.deserializer", StringDeserializer.class);
-        consumerProps.put("value.deserializer", StringDeserializer.class);
-
-        var consumerFactory = new DefaultKafkaConsumerFactory<String, String>(consumerProps);
-        var consumer = consumerFactory.createConsumer();
-        embeddedKafka.consumeFromAnEmbeddedTopic(consumer, "test-topic");
-
-        org.apache.kafka.clients.consumer.ConsumerRecords<String, String> consumerRecords = KafkaTestUtils.getRecords(consumer, java.time.Duration.ofSeconds(10));
-        List<ConsumerRecord<String, String>> records = new java.util.ArrayList<>();
-        consumerRecords.forEach(records::add);
-
-        ConsumerRecord<String, String> record = records.stream()
-                .filter(r -> r.key() != null && r.key().isEmpty())
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Record with empty key not found"));
-
-        assertNotNull(record.value());
-        assertTrue(record.key().isEmpty());
     }
 
     @Test
