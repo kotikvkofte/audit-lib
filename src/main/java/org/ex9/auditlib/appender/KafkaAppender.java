@@ -16,6 +16,7 @@ import org.ex9.auditlib.dto.HttpLogDto;
 import org.ex9.auditlib.service.KafkaPublishService;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Кастомный аппендер для работы с кафкой.
@@ -98,6 +99,7 @@ public class KafkaAppender extends AbstractAppender {
                     return;
                 }
                 if (obj instanceof HttpLogDto httpLogDto) {
+                    httpLogDto.setMessageId(UUID.randomUUID().toString());
                     kafkaPublishService.send(httpLogDto);
                     return;
                 }

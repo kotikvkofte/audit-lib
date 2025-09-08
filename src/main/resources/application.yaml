@@ -7,12 +7,18 @@ spring:
       properties:
         enable.idempotence: true
 
+
 audit:
   kafka:
-    topic: audit-log
+    topic:
+      requestsTopic: audit.requests
+      methodsTopic: audit.methods
   logging:
     enabled: true
     modes:
       - CONSOLE
       - FILE
       - KAFKA
+
+server:
+  port: 8080

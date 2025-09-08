@@ -17,13 +17,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * </p>
  * @author Краковцев Артём
  */
-@ConfigurationProperties(prefix = "audit.kafka")
+@ConfigurationProperties(prefix = "audit.kafka.topic")
 @Log4j2
 @Data
 public class AuditKafkaProperties {
 
-    /** Название Kafka топика для отправки логов. */
-    private String topic = "audit-log";
+    /** Название Kafka топиков для отправки логов. */
+    private String RequestsTopic;
+
+    private String MethodsTopic;
 
     /**
      * Инициализирует настройки и логирует их значения.
